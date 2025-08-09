@@ -43,17 +43,13 @@ if st.button("Run Agent"):
         with trends_placeholder.expander("Show Trends"):
             try:
                 st.markdown("## Trends\n" + output.get("get_trends").get("trends", "").content)
-            except Exception as e:
-                print("Error displaying trends:", e)
+
         with topic_placeholder.expander("Show Topics"):
             try:
                 st.markdown("## Topics\n" + output.get("create_topic").get("messages", "").get("user_prompt", ""))
-            except Exception as e:
-                print("Error displaying topics:", e)
+
         with storyboard_placeholder.expander("Show Storyboard"):
             try:
                 st.markdown("## Storyboard\n" + output.get("get_storyboard").get("messages", "").get("storyboard", "").content)
-            except Exception as e:
-                print("Error displaying storyboard:", e)
 
     st.success("Pipeline completed!")
