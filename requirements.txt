@@ -3,3 +3,5 @@ langchain-mistralai==0.2.3
 langgraph==0.2.60
 dotenv
 elevenlabs
+ddgs
+trafilatura

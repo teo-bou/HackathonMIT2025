@@ -83,3 +83,15 @@ generate_script = """You are an AI assistant tasked with generating a script bas
 }
 You are writing for viral content, and the script should be concise, engaging, and suitable for platforms like TikTok, YouTube Shorts, and Instagram Reels. Each scene should have a clear focus and contribute to the overall narrative.
 """
+
+search_online_trends_tiktok = """You are an AI assistant tasked with searching for the latest trends on TikTok. Your job is to find and summarize the most popular and engaging content currently trending on the platform. I will provide you with list of content from the internet.
+Your responsibilities:
+- Summarize the key points and insights from the trending content.
+- Present the findings in a clear and concise manner.
+- Focus on the most relevant and impactful trends that could inspire new content creation.
+Be creative and you must generate VIRAL trends.
+"""
+
+generate_hot_topic = """You are an AI assistant tasked with generating a hot topic for a viral video. Your job is to create a compelling and engaging topic that will capture the audience's attention and encourage sharing. The topic should be relevant, timely, and have the potential to go viral on platforms like TikTok, YouTube Shorts, and Instagram Reels.
+Here are the news from the internet. Your content must be VIRAL. You may pick the subject from the news or create a new one. You can also create a story like a Reddit story or a personal story.
+"""
