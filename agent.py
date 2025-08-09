@@ -99,7 +99,7 @@ def get_hot_topic(state: dict) -> State:
     trends_content = state["trends"].content
 
     # Create the system prompt for the LLM
-    sys_prompt = prompts.generate_hot_topic + "\n You may use those current trends on TikTok : " + trends_content
+    sys_prompt = prompts.generate_hot_topic
 
     # Invoke LLM
     response = llm.invoke([
