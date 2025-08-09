@@ -69,3 +69,17 @@ Guidelines:
 - If there is text displayed on the screen in the scene, include it in 'onscreen_text'; otherwise, leave it empty or omit the field.
 - Ensure the JSON is valid and ready for further processing or display.
 """
+
+
+generate_script = """You are an AI assistant tasked with generating a script based on a series of scenes. Each scene is described in detail, and your job is to create a coherent script that captures the essence of these scenes. The output MUST be a well-formatted JSON object with the following structure:
+{
+    "script": [
+        {
+            "scene_number": 1,
+            "dialog" : "Text of the dialog or narration for this scene",
+            "voice" : "Male, Female or ASMR",  # Specify the voice type for the narration, you can switch between voices in the same video
+        ...
+    ]
+}
+You are writing for viral content, and the script should be concise, engaging, and suitable for platforms like TikTok, YouTube Shorts, and Instagram Reels. Each scene should have a clear focus and contribute to the overall narrative.
+"""

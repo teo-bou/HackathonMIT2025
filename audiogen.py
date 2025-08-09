@@ -9,8 +9,14 @@ elevenlabs = ElevenLabs(
   api_key=os.getenv("ELEVENLABS_API_KEY"),
 )
 
+voices = {
+    "Male": "JBFqnCBsd6RMkjVDRZzb",
+    "Female": "9V6CvwsLXxm7GWktRAj9",
+    "ASMR" : "GL7nHO5mDrxcHlJPJK5T"
+}
 
-def generate_audio(text: str, path: str) -> None:
+
+def generate_audio(text: str, path: str, voice: str ) -> None:
     """
     Generate audio from text using ElevenLabs API.
     
@@ -18,7 +24,7 @@ def generate_audio(text: str, path: str) -> None:
     """
     audio = elevenlabs.text_to_speech.convert(
         text=text,
-        voice_id="JBFqnCBsd6RMkjVDRZzb",  # Example voice ID
+        voice_id=voices.get(voice, voices["Male"]),
         model_id="eleven_multilingual_v2",
         output_format="mp3_44100_128",
     )

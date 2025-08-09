@@ -1,0 +1,31 @@
+{
+    "scenes": [
+        {
+            "scene_number": 1,
+            "title": "The Struggle",
+            "timestart": "0:00:00",
+            "timeend": "0:00:30",
+            "content": "Close-up shot of a person lying on a couch, looking exhausted in a dimly lit, cozy room. The camera zooms in on their face as they sigh deeply, rubbing their temples. They look at a fitness app on their phone, then back at the couch, hesitating. Soft, relaxing ASMR sounds of rustling fabric and gentle tapping play in the background.",
+            "image": "exhausted person on couch",
+            "onscreen_text": "Ugh, I really don't feel like working out today..."
+        },
+        {
+            "scene_number": 2,
+            "title": "The Transformation",
+            "timestart": "0:00:30",
+            "timeend": "0:01:00",
+            "content": "Quick cut to the same person in workout clothes, standing in a bright, sunny gym. The camera follows them as they start exercising, with close-ups of their movements. The person starts with light stretching, then moves on to a workout routine. The camera captures the satisfying sounds of weights clinking, sneakers on the treadmill, and deep breaths. Upbeat, motivational music with ASMR workout sounds plays in the background.",
+            "image": "person working out in gym",
+            "onscreen_text": "But I always feel so much better after..."
+        },
+        {
+            "scene_number": 3,
+            "title": "End Screen",
+            "timestart": "0:01:00",
+            "timeend": "0:01:07",
+            "content": "Text overlay on a bright, motivational background: 'Workout ASMR: Because you deserve to feel good!' with a call-to-action to like, share, and follow for more.",
+            "image": "motivational workout text overlay",
+            "onscreen_text": "Workout ASMR: Because you deserve to feel good! Like, Share, Follow for more!"
+        }
+    ]
+}

@@ -9,11 +9,12 @@ from langchain_mistralai import ChatMistralAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from dotenv import load_dotenv
 import os
+from audiogen import generate_audio
 
 class State(TypedDict):
     messages: Dict
     scenes: Dict
-    images: Dict
+    script: Dict
 
 load_dotenv()  # take environment variables
 
@@ -77,8 +78,65 @@ def split_into_scenes(state: dict) -> State:
         "scenes": scenes
 
     }
+    # Write the scenes to a file for debugging purposes
+    with open("scenes.json", "w") as f:
+        json.dump(new_state, f, indent=4)
     return new_state
 
+
+
+def generate_script(state: dict) -> None:
+    print("***** generate_script *****")
+
+    # Extract the scenes from the state
+    scenes = state["scenes"]
+    #with open("scenes.json", "r") as f:
+        #scenes = json.load(f)["scenes"]
+
+    # Generate a script based on the scenes
+    scenes_text = "\n".join(
+        f"Scene {scene['scene_number']}: {scene['title']}\n"
+        f"Description: {scene['content']}\n"
+        f"Image: {scene['image']}\n"
+        f"On-screen text: {scene.get('onscreen_text', 'N/A')}\n"
+        for scene in scenes
+    )
+    
+    
+
+    sys_prompt = prompts.generate_script
+
+    response = llm.invoke([
+        SystemMessage(content=sys_prompt),
+        HumanMessage(content=scenes_text)]
+    ).content.strip().replace("```json", "").replace("```", "")
+    print(response)
+    # Parse the response into a JSON object
+    script = json.loads(response)["script"]
+    # Write the script to a file for debugging purposes
+    with open("script.json", "w") as f:
+        json.dump(script, f, indent=4)
+    # Create a new state with the split scenes
+    new_state = {
+        "script": script
+    }
+    return new_state
+
+
+
+    
+
+
+
+def generate_audio_files(state: dict) -> None:
+    print("***** generate_audio *****")
+    for scene in state["script"]:
+        # Generate audio for each scene
+        text = scene["dialog"]
+        voice = scene.get("voice", "ASMR")
+        path = f"audio/scene_{scene['scene_number']}.mp3"
+        generate_audio(text, path, voice)
+    print("Audio generation completed for all scenes.")
 
 
 def pipeline():
@@ -89,10 +147,14 @@ def pipeline():
     # Define the workflow steps
     workflow.add_node("get_storyboard", get_storyboard)
     workflow.add_node("split_into_scenes", split_into_scenes)
+    workflow.add_node("generate_script", generate_script)
+    workflow.add_node("generate_audio_files", generate_audio_files)
 
     workflow.add_edge(START, "get_storyboard")
     workflow.add_edge("get_storyboard", "split_into_scenes")
-    workflow.add_edge("split_into_scenes", END)
+    workflow.add_edge("split_into_scenes", "generate_script")
+    workflow.add_edge("generate_script", "generate_audio_files")
+    workflow.add_edge("generate_audio_files", END)
     # Run the workflow
     graph = workflow.compile()
 
@@ -119,6 +181,8 @@ def generate_storyboard(user_prompt: str) -> State:
         print("Current Output:", output)
     
     return output  # Final state with generated storyboard and scenes
+
+
 
 if __name__ == "__main__":
     generate_storyboard(input("Enter your prompt: "))
