@@ -17,7 +17,6 @@ class State(TypedDict):
 
 load_dotenv()  # take environment variables
 
-print("This is the main function of the script.")
     ### MISTRAL EXAMPLE
 
     # Configure Mistral API Key
@@ -100,10 +99,26 @@ def pipeline():
     return graph
 
 
-if __name__ == "__main__":
+def generate_storyboard(user_prompt: str) -> State:
+    """
+    Generate a storyboard based on the user prompt.
+    """
+    # Initialize the state with the user prompt
+    state = {
+        "messages": {
+            "user_prompt": user_prompt
+        }
+    }
+    
+    # Run the pipeline
     graph = pipeline()
-    user_prompt = input()
-    state = {"messages": {"user_prompt": user_prompt}}
-    # Iterate over the graph
+    
+
+    # Iterate over the graph to get the final state
     for output in graph.stream(state):
         print("Current Output:", output)
+    
+    return output  # Final state with generated storyboard and scenes
+
+if __name__ == "__main__":
+    generate_storyboard(input("Enter your prompt: "))
