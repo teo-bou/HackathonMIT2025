@@ -65,8 +65,8 @@ def download_first_media(query, folder="medias", filename="media1", is_video=Fal
         print(f"Erreur lors du téléchargement : {media_response.status_code}")
 
 def get_pictures_videos(req, is_video=False):
-    for index, word in enumerate(req[-1]):
-        filename = f"scene{req[index][0]}"
+    for index, word in req:
+        filename = f"scene{index}"
         download_first_media(word, filename=filename, is_video=is_video)
 
 if __name__ == "__main__":

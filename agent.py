@@ -293,7 +293,8 @@ def download_media(state: dict) -> dict:
     if isinstance(scenes_data, dict):
         scenes_list = scenes_data.get("scenes", [])
     else:
-        scenes_list = scenes_data    
+        scenes_list = scenes_data
+
     queries = []
     for scene in scenes_list:
         if "image" in scene:
@@ -302,7 +303,24 @@ def download_media(state: dict) -> dict:
     get_pictures_videos(queries, is_video=False)
 
 
+def delete_files():
+    folders = ["medias","audio"]
+    for folder in folders:
+        for filename in os.listdir(folder):
+            file_path = os.path.join(folder, filename)
+            try:
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                print(f"Erreur lors de la suppression de {file_path} : {e}")
+
+def create_prompt():
+    print("***** create_prompt *****")
+
 def pipeline():
+
+    delete_files()
+
     # Start the Graph with the initial state
     workflow = StateGraph(State)
     
@@ -316,17 +334,18 @@ def pipeline():
     workflow.add_node("generate_script", generate_script)
     workflow.add_node("generate_sfx", generate_sfx)
     workflow.add_node("generate_audio_files", generate_audio_files)
+    workflow.add_node("create_prompt", create_prompt)
 
     workflow.add_edge(START, "get_trends")
     workflow.add_edge("get_trends", "create_topic")
     workflow.add_edge("create_topic", "get_storyboard")
     workflow.add_edge("get_storyboard", "split_into_scenes")
-    #workflow.add_edge("split_into_scenes", "download_media")
-    #workflow.add_edge("download_media", "generate_script")
-    workflow.add_edge("split_into_scenes", "generate_script")
+    workflow.add_edge("split_into_scenes", "download_media")
+    workflow.add_edge("download_media", "generate_script")
     workflow.add_edge("generate_script", "generate_sfx")
     workflow.add_edge("generate_sfx", "generate_audio_files")
-    workflow.add_edge("generate_audio_files", END)
+    workflow.add_edge("generate_audio_files", "create_prompt")
+    workflow.add_edge("create_prompt", END)
     # Run the workflow
     graph = workflow.compile()
 
