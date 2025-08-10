@@ -1,0 +1,18 @@
+Titre : "Les Animaux de la Ferme"
+
+Narration: narration.mp3
+Music: musique_ferme.mp3
+Images:
+  vache.jpg 00:00:00 - 00:00:05
+  coq.png 00:00:05 - 00:00:12
+  mouton.jpg 00:00:12 - 00:00:25
+Texte:
+  "La vache fait Meuh !" 00:00:00 - 00:00:02
+  "Meuh Meuh..." 00:00:02 - 00:00:03
+  "Meuuuuuuuuuuuuuuh !" 00:00:03 - 00:00:05
+  "Le coq fait coco !" 00:00:05 - 00:00:08
+  "Coco Coco..." 00:00:08 - 00:00:10
+  "Cocoricooooooooo !" 00:00:10 - 00:00:12
+  "Le mouton fait Behh !" 00:00:12 - 00:00:17
+  "Behh Behh..." 00:00:17 - 00:00:22
+  "Beeeeeeeeeeeeehh !" 00:00:22 - 00:00:27
