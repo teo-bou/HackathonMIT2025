@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 import os
 from audiogen import generate_audio, generate_audio_sfx
 import search_online
+from webscraping_videos_pictures import get_pictures_videos
 
 
 class State(TypedDict):
@@ -279,6 +280,22 @@ def generate_audio_files(state: dict) -> None:
         generate_audio_sfx(description, duration, path)
     print("SFX audio generation completed for all scenes.")
 
+def download_media(state: dict) -> dict:
+    print("***** download_media *****")
+    scenes_data = state["scenes"]
+    if isinstance(scenes_data, str):  # si c'est une chaîne JSON
+        scenes_data = json.loads(scenes_data)
+    if isinstance(scenes_data, dict):
+        scenes_list = scenes_data.get("scenes", [])
+    else:
+        scenes_list = scenes_data    
+    queries = []
+    for scene in scenes_list:
+        if "image" in scene:
+            queries.append((scene["scene_number"], scene["image"]))
+
+    get_pictures_videos(queries, is_video=False)
+
 
 def pipeline():
     # Start the Graph with the initial state
@@ -290,6 +307,7 @@ def pipeline():
     workflow.add_node("create_topic", create_topic)
     workflow.add_node("get_storyboard", get_storyboard)
     workflow.add_node("split_into_scenes", split_into_scenes)
+    workflow.add_node("download_media", download_media)
     workflow.add_node("generate_script", generate_script)
     workflow.add_node("generate_sfx", generate_sfx)
     workflow.add_node("generate_audio_files", generate_audio_files)
@@ -298,7 +316,8 @@ def pipeline():
     workflow.add_edge("get_trends", "create_topic")
     workflow.add_edge("create_topic", "get_storyboard")
     workflow.add_edge("get_storyboard", "split_into_scenes")
-    workflow.add_edge("split_into_scenes", "generate_script")
+    workflow.add_edge("split_into_scences", "download_media")
+    workflow.add_edge("download_media", "generate_script")
     workflow.add_edge("generate_script", "generate_sfx")
     workflow.add_edge("generate_sfx", "generate_audio_files")
     workflow.add_edge("generate_audio_files", END)
