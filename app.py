@@ -131,7 +131,7 @@ if st.button("🚀 Run Agent"):
             except Exception as e:
                 sfx_area.error(f"Error reading storyboard: {e}")
 
-        if "audio_files_generated" in output and output["audio_files_generated"]:
+        if "generate_audio_files" in output and output["generate_audio_files"]["audio_files_generated"]:
             try:
                 files = [f for f in os.listdir("audio") if f.lower().endswith(".mp3")]
                 if not files:
