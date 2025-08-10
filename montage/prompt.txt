@@ -1,7 +1,14 @@
 Titre : "Les Animaux de la Ferme"
 
-Narration: narration.mp3
 Music: musique_ferme.mp3
+Narration: 
+	narration1.mp3 00:00:00
+	narration2.mp3 00:00:05
+	narration3.mp3 00:00:12
+SFX: 
+	sfx1.mp3 00:00:03
+	sfx2.mp3 00:00:10
+	sfx3.mp3 00:00:23
 Images:
   vache.jpg 00:00:00 - 00:00:05
   coq.png 00:00:05 - 00:00:12

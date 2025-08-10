@@ -1,4 +1,4 @@
-# montage_ffmpeg_fix.py
+# montage_ffmpeg_final.py
 import os
 import re
 import subprocess
@@ -16,7 +16,6 @@ VIDEO_W, VIDEO_H = 1080, 1920  # vertical 9:16
 FPS = 30
 TITLE_DURATION = 2.5          # secondes
 FADE_DURATION = 0.5           # secondes pour fade in/out sur images
-TEXT_AREA_HEIGHT = 220
 ASS_STYLE_NAME = "Default"
 # ----------------------------
 
@@ -31,26 +30,57 @@ def seconds_to_ass(ts: float) -> str:
     cs = int(round((ts - math.floor(ts)) * 100))
     return f"{h}:{m:02d}:{s:02d}.{cs:02d}"
 
+def extract_section(content: str, name: str) -> str:
+    """
+    Récupère le bloc après 'name:' jusqu'au prochain header (ligne qui finit par ':') ou EOF.
+    Case-insensitive.
+    """
+    pattern = rf'(?is){re.escape(name)}\s*:\s*(.*?)(?=\n\s*\w[\w \-]*\s*:|\Z)'
+    m = re.search(pattern, content)
+    return m.group(1).strip() if m else ""
+
 def parse_prompt(path):
+    """
+    Parse prompt.txt et renvoie:
+    title, music, narrs ([(file,hms),...]), sfxs ([(file,hms),...]), images ([(file,start,end),...]), texts ([(text,start,end),...])
+    """
+    if not os.path.exists(path):
+        raise SystemExit(f"prompt introuvable: {path}")
+
     with open(path, "r", encoding="utf-8") as f:
         content = f.read()
 
-    title_m = re.search(r'Titre\s*:\s*"(.*?)"', content)
-    title = title_m.group(1) if title_m else "Titre"
+    title_m = re.search(r'(?i)Titre\s*:\s*"(.*?)"', content)
+    title = title_m.group(1).strip() if title_m else "Titre"
 
-    narr_m = re.search(r"Narration:\s*(.+)", content)
-    narr = narr_m.group(1).strip() if narr_m else None
-
-    music_m = re.search(r"Music:\s*(.+)", content)
+    music_m = re.search(r'(?i)Music\s*:\s*(\S+)', content)
     music = music_m.group(1).strip() if music_m else None
 
-    images = re.findall(r"(\S+\.(?:jpg|png))\s+(\d+:\d+:\d+)\s*-\s*(\d+:\d+:\d+)", content)
-    texts  = re.findall(r'"(.*?)"\s+(\d+:\d+:\d+)\s*-\s*(\d+:\d+:\d+)', content)
+    # extraire sections robustement
+    narr_block = extract_section(content, "Narration")
+    sfx_block = extract_section(content, "SFX")
+    images_block = extract_section(content, "Images")
+    texts_block = extract_section(content, "Texte") or extract_section(content, "Text")
 
-    return title, narr, music, images, texts
+    # trouver fichiers + timecodes dans chaque bloc
+    narrs = re.findall(r'(\S+\.mp3)\s+(\d{1,2}:\d{2}:\d{2})', narr_block)
+    sfxs  = re.findall(r'(\S+\.mp3)\s+(\d{1,2}:\d{2}:\d{2})', sfx_block)
+    images = re.findall(r'(\S+\.(?:jpg|png))\s+(\d{1,2}:\d{2}:\d{2})\s*-\s*(\d{1,2}:\d{2}:\d{2})', images_block)
+    texts  = re.findall(r'"(.*?)"\s+(\d{1,2}:\d{2}:\d{2})\s*-\s*(\d{1,2}:\d{2}:\d{2})', texts_block)
+
+    # debug print
+    print("Parsed prompt ->")
+    print(" Title :", title)
+    print(" Music :", music)
+    print(" Narrations:", narrs)
+    print(" SFXs:", sfxs)
+    print(" Images:", images)
+    print(" Texts:", len(texts), "entries")
+
+    return title, music, narrs, sfxs, images, texts
 
 def make_title_image(title, out_path):
-    img = Image.new("RGB", (VIDEO_W, int(VIDEO_H*0.15)), (0,0,0))
+    img = Image.new("RGB", (VIDEO_W, VIDEO_H//6), (0,0,0))
     draw = ImageDraw.Draw(img)
     font = None
     for candidate in ["arial.ttf", "DejaVuSans-Bold.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"]:
@@ -61,14 +91,21 @@ def make_title_image(title, out_path):
             font = None
     if font is None:
         font = ImageFont.load_default()
-    w,h = draw.textsize(title, font=font)
+    try:
+        bbox = draw.textbbox((0,0), title, font=font)
+        w = bbox[2]-bbox[0]; h = bbox[3]-bbox[1]
+    except Exception:
+        w,h = draw.textsize(title, font=font)
     draw.text(((VIDEO_W-w)//2, (img.height-h)//2), title, font=font, fill=(255,215,0))
     img.save(out_path)
 
 def build_ass_file(text_entries, ass_path, title_offset):
-    header = "[Script Info]\nScriptType: v4.00+\nCollisions: Normal\nPlayResX: %d\nPlayResY: %d\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n" % (VIDEO_W, VIDEO_H)
-    # Alignment=5 : centré au milieu
-    header += f"Style: {ASS_STYLE_NAME},DejaVu Sans,48,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,0,5,10,10,10,1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
+    # ASS header with Alignment=5 (middle-center)
+    header = "[Script Info]\nScriptType: v4.00+\nCollisions: Normal\nPlayResX: %d\nPlayResY: %d\n\n" % (VIDEO_W, VIDEO_H)
+    header += "[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
+    # set Alignment=5 (middle center) - MarginV=20
+    header += f"Style: {ASS_STYLE_NAME},DejaVu Sans,48,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,0,5,10,10,20,1\n\n"
+    header += "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
     lines = [header]
     for text, start_h, end_h in text_entries:
         start_s = time_to_seconds(start_h) + title_offset
@@ -81,7 +118,6 @@ def build_ass_file(text_entries, ass_path, title_offset):
         f.writelines(lines)
 
 def run(cmd, cwd=None):
-    # Exécute une commande et capture stdout/stderr pour debug
     print("RUN:", " ".join(cmd))
     try:
         p = subprocess.run(cmd, check=True, capture_output=True, text=True, cwd=cwd)
@@ -98,8 +134,97 @@ def run(cmd, cwd=None):
             print("STDERR:\n", e.stderr)
         raise
 
+def build_audio_mix(tmpdir, music_path, narrs, sfxs, total_duration):
+    """
+    Make mixed audio file 'mixed_audio.mp3' in tmpdir.
+    Inputs can be absolute paths. We run ffmpeg in tmpdir.
+    """
+    inputs = []
+    filters = []
+    labels = []
+    idx = 0
+
+    # Music
+    if music_path:
+        if not os.path.exists(music_path):
+            print(f"⚠ Music not found: {music_path} (ignored)")
+            music_path = None
+        else:
+            inputs.append(music_path)
+            lbl = f"[a{idx}]"
+            filters.append(f"[{idx}:a]volume=0.18,apad,atrim=0:{total_duration}{lbl}")
+            labels.append(lbl)
+            idx += 1
+
+    # Narrations
+    for narr_file, start_h in narrs:
+        narr_path = os.path.join(FILES_DIR, narr_file)
+        if not os.path.exists(narr_path):
+            print(f"⚠ Narration missing: {narr_path} (ignored)")
+            continue
+        inputs.append(narr_path)
+        start = time_to_seconds(start_h) + TITLE_DURATION
+        ms = int(round(start * 1000))
+        lbl = f"[a{idx}]"
+        filters.append(f"[{idx}:a]adelay={ms}|{ms},apad,atrim=0:{total_duration}{lbl}")
+        labels.append(lbl)
+        idx += 1
+
+    # SFX
+    for sfx_file, start_h in sfxs:
+        sfx_path = os.path.join(FILES_DIR, sfx_file)
+        if not os.path.exists(sfx_path):
+            print(f"⚠ SFX missing: {sfx_path} (ignored)")
+            continue
+        inputs.append(sfx_path)
+        start = time_to_seconds(start_h) + TITLE_DURATION
+        ms = int(round(start * 1000))
+        lbl = f"[a{idx}]"
+        filters.append(f"[{idx}:a]adelay={ms}|{ms},apad,atrim=0:{total_duration}{lbl}")
+        labels.append(lbl)
+        idx += 1
+
+    if not inputs:
+        print("No audio inputs found.")
+        return None
+
+    mixed_basename = "mixed_audio.mp3"
+    out_path = os.path.join(tmpdir, mixed_basename)
+
+    # single input -> just trim/export
+    if len(labels) == 1:
+        print("Single audio input -> simple trim/export")
+        cmd = ["ffmpeg", "-y", "-i", inputs[0], "-t", str(total_duration), "-c:a", "mp3", mixed_basename]
+        run(cmd, cwd=tmpdir)
+        return out_path
+
+    # multiple -> amix
+    amix_inputs = "".join(labels)  # [a0][a1]...
+    filters.append(f"{amix_inputs}amix=inputs={len(labels)}:duration=longest[aout]")
+
+    filter_complex = ";".join(filters)
+    print("Audio filter_complex:\n", filter_complex)
+
+    cmd = ["ffmpeg", "-y"]
+    for p in inputs:
+        cmd += ["-i", p]
+    cmd += ["-filter_complex", filter_complex, "-map", "[aout]", "-t", str(total_duration), "-c:a", "mp3", mixed_basename]
+
+    run(cmd, cwd=tmpdir)
+    return out_path
+
 def main():
-    title, narr_file, music_file, images, texts = parse_prompt(PROMPT_FILE)
+    title, music_file, narrs, sfxs, images, texts = parse_prompt(PROMPT_FILE)
+
+    # debug: existence checks
+    print("Checking files exist in", FILES_DIR)
+    if music_file:
+        print(" -", music_file, "exists?", os.path.exists(os.path.join(FILES_DIR, music_file)))
+    for n in narrs:
+        print(" - narr:", n[0], "exists?", os.path.exists(os.path.join(FILES_DIR, n[0])))
+    for s in sfxs:
+        print(" - sfx:", s[0], "exists?", os.path.exists(os.path.join(FILES_DIR, s[0])))
+
     if not images:
         raise SystemExit("Aucune image trouvée dans prompt.txt")
 
@@ -109,17 +234,14 @@ def main():
     tmpdir = tempfile.mkdtemp(prefix="montage_tmp_")
     print("Temp dir:", tmpdir)
 
-    # title
+    # title (create in tmpdir)
     title_png = os.path.join(tmpdir, "title.png")
     make_title_image(title, title_png)
     title_mp4 = os.path.join(tmpdir, "title.mp4")
     vf_title = f"scale=1080:-1,pad={VIDEO_W}:{VIDEO_H}:(ow-iw)/2:(oh-ih)/2,format=yuv420p"
-    run([
-        "ffmpeg", "-y", "-loop", "1", "-i", title_png,
-        "-t", str(TITLE_DURATION), "-vf", vf_title, "-r", str(FPS),
-        "-pix_fmt", "yuv420p", title_mp4
-    ])
+    run(["ffmpeg", "-y", "-loop", "1", "-i", os.path.basename(title_png), "-t", str(TITLE_DURATION), "-vf", vf_title, "-r", str(FPS), "-pix_fmt", "yuv420p", os.path.basename(title_mp4)], cwd=tmpdir)
 
+    # image segments (create in tmpdir)
     seg_files = []
     for idx, (imgfile, start_h, end_h) in enumerate(images):
         duration = time_to_seconds(end_h) - time_to_seconds(start_h)
@@ -133,53 +255,30 @@ def main():
             f"pad={VIDEO_W}:{VIDEO_H}:(ow-iw)/2:(oh-ih)/2,format=yuv420p,"
             f"fade=t=in:st=0:d={FADE_DURATION},fade=t=out:st={fade_out_start}:d={FADE_DURATION}"
         )
-        run([
-            "ffmpeg", "-y", "-loop", "1", "-i", in_path,
-            "-t", str(duration),
-            "-vf", vf,
-            "-r", str(FPS),
-            "-pix_fmt", "yuv420p",
-            out_seg
-        ])
+        run(["ffmpeg", "-y", "-loop", "1", "-i", os.path.abspath(in_path), "-t", str(duration), "-vf", vf, "-r", str(FPS), "-pix_fmt", "yuv420p", os.path.basename(out_seg)], cwd=tmpdir)
         seg_files.append(out_seg)
 
+    # concat
     concat_list = os.path.join(tmpdir, "concat.txt")
     with open(concat_list, "w", encoding="utf-8") as f:
         f.write(f"file '{os.path.basename(title_mp4)}'\n")
         for sf in seg_files:
             f.write(f"file '{os.path.basename(sf)}'\n")
     concat_out = os.path.join(tmpdir, "concat_all.mp4")
-    # run concat in tmpdir to use relative paths in the list
     run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", os.path.basename(concat_list), "-c", "copy", os.path.basename(concat_out)], cwd=tmpdir)
 
+    # subs ASS (centered)
     ass_path = os.path.join(tmpdir, "subs.ass")
     build_ass_file(texts, ass_path, title_offset=TITLE_DURATION)
 
-    # prepare audio
-    narr_path = os.path.join(FILES_DIR, narr_file) if narr_file else None
+    # audio: pass absolute music path (or None)
     music_path = os.path.join(FILES_DIR, music_file) if music_file else None
-    mixed_audio = os.path.join(tmpdir, "mixed_audio.mp3")
+    mixed_audio = build_audio_mix(tmpdir, music_path, narrs, sfxs, total_duration)
 
-    if narr_path and music_path and os.path.exists(narr_path) and os.path.exists(music_path):
-        filter_complex = "[0:a]volume=1[a0];[1:a]volume=0.18[a1];[a0][a1]amix=inputs=2:duration=longest"
-        run([
-            "ffmpeg", "-y", "-i", narr_path, "-i", music_path,
-            "-filter_complex", filter_complex,
-            "-c:a", "mp3", "-t", str(total_duration), os.path.basename(mixed_audio)
-        ], cwd=tmpdir)
-    elif narr_path and os.path.exists(narr_path):
-        run(["ffmpeg", "-y", "-i", narr_path, "-c:a", "mp3", "-t", str(total_duration), os.path.basename(mixed_audio)], cwd=tmpdir)
-    elif music_path and os.path.exists(music_path):
-        run(["ffmpeg", "-y", "-i", music_path, "-af", "volume=0.18", "-c:a", "mp3", "-t", str(total_duration), os.path.basename(mixed_audio)], cwd=tmpdir)
-    else:
-        mixed_audio = None
-        print("No audio sources found; final will be silent.")
-
-    # FINAL: run from tmpdir and use relative ass path
+    # final mux + burn subs (run in tmpdir)
     final_cmd = ["ffmpeg", "-y", "-i", os.path.basename(concat_out)]
     if mixed_audio:
         final_cmd += ["-i", os.path.basename(mixed_audio)]
-    # use relative ass filename in filter; run with cwd=tmpdir so ffmpeg resolves it
     final_cmd += ["-vf", f"ass={os.path.basename(ass_path)}", "-c:v", "libx264", "-preset", "medium", "-crf", "18"]
     if mixed_audio:
         final_cmd += ["-map", "0:v:0", "-map", "1:a:0", "-c:a", "aac", "-b:a", "192k", "-shortest", "-t", str(total_duration)]
@@ -187,7 +286,6 @@ def main():
         final_cmd += ["-an", "-shortest", "-t", str(total_duration)]
     final_cmd += [OUTPUT_VIDEO]
 
-    # execute final command in tmpdir
     run(final_cmd, cwd=tmpdir)
 
     print("✅ Vidéo finale:", OUTPUT_VIDEO)
