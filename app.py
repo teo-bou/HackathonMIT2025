@@ -46,7 +46,7 @@ if st.button("🚀 Run Agent"):
     with tabs[5]:
         sfx_area = st.empty()
     with tabs[6]:
-        audio_files_area = st.empty()
+        audio_files_area = st.container()
     with tabs[7]:
         logs_area = st.empty()
 
@@ -133,15 +133,16 @@ if st.button("🚀 Run Agent"):
 
         if "generate_audio_files" in output and output["generate_audio_files"]["audio_files_generated"]:
             try:
-                files = [f for f in os.listdir("audio") if f.lower().endswith(".mp3")]
-                if not files:
-                    st.warning("Aucun fichier audio trouvé dans le dossier.")
-                else:
-                    for filename in files:
-                        filepath = os.path.join("audio", filename)
-                        st.markdown(f"**🎵 {filename}**")
-                        st.audio(filepath, format="audio/mp3")  # format peut être ajusté
-                        st.markdown("---")
+                with audio_files_area:
+                    files = [f for f in os.listdir("audio") if f.lower().endswith(".mp3")]
+                    if not files:
+                        st.warning("Aucun fichier audio trouvé dans le dossier.")
+                    else:
+                        for filename in files:
+                            filepath = os.path.join("audio", filename)
+                            st.markdown(f"**🎵 {filename}**")
+                            st.audio(filepath, format="audio/mp3")  # format peut être ajusté
+                            st.markdown("---")
             except Exception as e:
                 sfx_area.error(f"Error reading storyboard: {e}")
 
