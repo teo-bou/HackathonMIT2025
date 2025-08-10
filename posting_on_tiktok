@@ -1,0 +1,9 @@
+CLIENT KEY sbawh6eqivir2d5p07
+CLIENT SECRET uYtIWnfFEBcCDGDoQiBFz5CmQ3Ch4C3k
+
+https://www.tiktok.com/v2/auth/authorize/
+  ?client_key=sbawh6eqivir2d5p07
+  &response_type=code
+  &scope=video.upload
+  &redirect_uri=https://github.com/teo-bou/HackathonMIT2025
+  &state=xyz
