@@ -38,3 +38,9 @@
     ```bash
     python agent.py
     ```
+
+6. **Run the app**
+
+    ```bash
+    streamlit run app.py
+    ```
