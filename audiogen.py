@@ -33,3 +33,21 @@ def generate_audio(text: str, path: str, voice: str ) -> None:
         for chunk in audio:
             f.write(chunk)
 
+
+def generate_audio_sfx(description: str, duration: int, path: str) -> None:
+    """
+    Generate audio SFX from text using ElevenLabs API.
+
+    :param description: The text to convert to SFX.
+    """
+    audio = elevenlabs.text_to_sound_effects.convert(
+        text=description,
+        duration_seconds=duration,
+        output_format="mp3_44100_128"
+    )
+
+    with open(path, "wb") as f:
+        for chunk in audio:
+            f.write(chunk)
+
+

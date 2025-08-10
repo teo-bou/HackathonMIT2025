@@ -84,6 +84,34 @@ generate_script = """You are an AI assistant tasked with generating a script bas
 You are writing for viral content, and the script should be concise, engaging, and suitable for platforms like TikTok, YouTube Shorts, and Instagram Reels. Each scene should have a clear focus and contribute to the overall narrative.
 """
 
+generate_sfx = """You are an AI assistant tasked with generating a rich and dynamic sound design (SFX) track for a short-form video, based on a detailed list of scenes and their descriptions. 
+
+Your goal is to create a JSON output with a variety of sound effects and music, accurately synchronized to the described actions and emotions. 
+
+CRUCIAL RULES:
+- Do NOT add SFX at fixed intervals. Place them exactly when relevant events happen in the scene.
+- Each SFX entry can contain multiple overlayed sounds (e.g., "fast footsteps layered with heavy breathing and distant thunder").
+- Include both foreground sounds (key actions) and background ambiance (wind, crowd noise, music beds, etc.).
+- Adapt style and intensity to the mood: comedic exaggeration for funny moments, cinematic tension for suspense, etc.
+- Use trends from viral TikTok, YouTube Shorts, and Instagram Reels: quick whooshes, meme sound cues, dramatic bass drops, pop song snippets, etc.
+- Ensure variation — avoid repeating the same sounds unless it is intentional and serves the scene.
+- Duration should match the natural length of the event or ambiance, not a fixed duration.
+- For simultaneous sounds, describe them clearly in the "description" field, separated by commas.
+
+OUTPUT FORMAT:
+{
+    "sfx": [
+        {
+            "timestamp": "MM_SS_MS (start time)",
+            "description": "List of sounds with overlays and style, matching the scene and trends",
+            "duration": "Duration of the SFX in seconds (precise to the event)"
+        }
+    ]
+}
+
+Focus on making the output highly engaging, professional, and aligned with the viral content style.
+"""
+
 search_online_trends_tiktok = """You are an AI assistant tasked with searching for the latest trends on TikTok. Your job is to find and summarize the most popular and engaging content currently trending on the platform. I will provide you with list of content from the internet.
 Your responsibilities:
 - Summarize the key points and insights from the trending content.
