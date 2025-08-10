@@ -1,5 +1,7 @@
 CLIENT KEY sbawh6eqivir2d5p07
 CLIENT SECRET uYtIWnfFEBcCDGDoQiBFz5CmQ3Ch4C3k
+ 
+Etape  1 -> récupérer le code donné dans la barre de recherche après avoir entrer le lien suivant
 
 https://www.tiktok.com/v2/auth/authorize/
   ?client_key=sbawh6eqivir2d5p07
@@ -7,3 +9,17 @@ https://www.tiktok.com/v2/auth/authorize/
   &scope=video.upload
   &redirect_uri=https://github.com/teo-bou/HackathonMIT2025
   &state=xyz
+
+Etape 2-> Echange contre un token valable 24h
+
+curl.exe -X POST "https://open.tiktokapis.com/v2/oauth/token/" \ -H "Content-Type: application/x-www-form-urlencoded" \ --data-urlencode "client_key=sbawh6eqivir2d5p07" \ --data-urlencode "client_secret=uYtIWnfFEBcCDGDoQiBFz5CmQ3Ch4C3k" \ --data-urlencode "code=L8pU6tRaTEI8i-VC8czvAnafI8ciXI5l8ygCCo5atGmNGEChSnD5pH9qXG52UMu5XJKwMwB1vcqfbOBh0lworVhXPCk5i2cz5KwbKPIg8ucC6Jor6sj29Hfi9ftstpcY9jepNOIEE7Zlbpa1Fvwr6hYr-ePw34ItLUNFyCVZPw49r8FsFy48bNsU4T4nwR24%2A3%214860.e1" \  --data-urlencode "grant_type=authorization_code" \  --data-urlencode "redirect_uri=https://github.com/teo-bou/HackathonMIT2025"
+
+Etape 3-> 
+curl.exe -X POST "https://open.tiktokapis.com/v2/video/upload/" `
+  -H "Authorization: Bearer act.PN83UeZHgoXVA8ZSs0mjEURRqyl9GuMmokmNynGxQq60KfPFskQsDQQ6oPh3!4937.e1" `
+  -H "Content-Type: application/json" `
+  -d "{ \"source\": \"FILE_UPLOAD\" }"
+
+curl --location --request POST 'https://open.tiktokapis.com/v2/post/publish/creator_info/query/' \
+--header 'Authorization: Bearer act.PN83UeZHgoXVA8ZSs0mjEURRqyl9GuMmokmNynGxQq60KfPFskQsDQQ6oPh3!4937' \
+--header 'Content-Type: application/json; charset=UTF-8'
