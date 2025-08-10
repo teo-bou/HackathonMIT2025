@@ -30,8 +30,7 @@ if st.button("Run Agent"):
     trends_placeholder = st.empty()
     topic_placeholder = st.empty()
     storyboard_placeholder = st.empty()
-    scenes_placeholder = st.empty()
-    script_placeholder = st.empty()
+
 
 
     
@@ -43,13 +42,16 @@ if st.button("Run Agent"):
         with trends_placeholder.expander("Show Trends"):
             try:
                 st.markdown("## Trends\n" + output.get("get_trends").get("trends", "").content)
-
+            except Exception as e:
+                pass
         with topic_placeholder.expander("Show Topics"):
             try:
                 st.markdown("## Topics\n" + output.get("create_topic").get("messages", "").get("user_prompt", ""))
-
+            except Exception as e:
+                pass
         with storyboard_placeholder.expander("Show Storyboard"):
             try:
                 st.markdown("## Storyboard\n" + output.get("get_storyboard").get("messages", "").get("storyboard", "").content)
-
+            except Exception as e:
+                pass
     st.success("Pipeline completed!")
