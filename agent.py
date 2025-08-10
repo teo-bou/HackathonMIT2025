@@ -9,7 +9,7 @@ from langchain_mistralai import ChatMistralAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from dotenv import load_dotenv
 import os
-from audiogen import generate_audio
+from audiogen import generate_audio, generate_audio_sfx
 import search_online
 
 
@@ -18,6 +18,7 @@ class State(TypedDict):
     messages: Dict
     scenes: Dict
     script: Dict
+    sfx: Dict
     trends: Dict
 
 load_dotenv()  # take environment variables
@@ -32,8 +33,6 @@ llm = ChatMistralAI(
         temperature=0,
         max_retries=5
 )
-
-
 
 def get_trends(state: dict) -> State:
     print("***** get_trends *****")
@@ -225,9 +224,42 @@ def generate_script(state: dict) -> None:
     return new_state
 
 
+def generate_sfx(state: dict) -> None:
+    print("***** generate_sfx *****")
 
-    
+    # Extract the scenes from the state
+    scenes = state["scenes"]
+    # with open("scenes.json", "r") as f:
+    # scenes = json.load(f)["scenes"]
 
+    # Generate sound design based on the scenes
+    scenes_text = "\n".join(
+        f"Scene {scene['scene_number']}: {scene['title']}\n"
+        f"Timestamp beginning: {scene['timestart']}\n"
+        f"Timestamp end: {scene['timeend']}\n"
+        f"Description: {scene['content']}\n"
+        f"Image: {scene['image']}\n"
+        f"On-screen text: {scene.get('onscreen_text', 'N/A')}\n"
+        for scene in scenes
+    )
+
+    sys_prompt = prompts.generate_sfx
+
+    response = llm.invoke([
+        SystemMessage(content=sys_prompt),
+        HumanMessage(content=scenes_text)]
+    ).content.strip().replace("```json", "").replace("```", "")
+    print(response)
+    # Parse the response into a JSON object
+    sfx = json.loads(response)["sfx"]
+    # Write the sfx to a file for debugging purposes
+    with open("sfx.json", "w") as f:
+        json.dump(sfx, f, indent=4)
+    # Create a new state with the split scenes
+    new_state = {
+        "sfx": sfx
+    }
+    return new_state
 
 
 def generate_audio_files(state: dict) -> None:
@@ -236,9 +268,16 @@ def generate_audio_files(state: dict) -> None:
         # Generate audio for each scene
         text = scene["dialog"]
         voice = scene.get("voice", "ASMR")
-        path = f"audio/scene_{scene['scene_number']}.mp3"
+        path = f"audio/dialog_scene_{scene['scene_number']}.mp3"
         generate_audio(text, path, voice)
-    print("Audio generation completed for all scenes.")
+    print("Dialog audio generation completed for all scenes.")
+    for sfx in state["sfx"]:
+        # Generate audio for each sfx
+        description = sfx["description"]
+        duration = sfx["duration"]
+        path = f"audio/sfx_{sfx['timestamp']}.mp3"
+        generate_audio_sfx(description, duration, path)
+    print("SFX audio generation completed for all scenes.")
 
 
 def pipeline():
@@ -252,6 +291,7 @@ def pipeline():
     workflow.add_node("get_storyboard", get_storyboard)
     workflow.add_node("split_into_scenes", split_into_scenes)
     workflow.add_node("generate_script", generate_script)
+    workflow.add_node("generate_sfx", generate_sfx)
     workflow.add_node("generate_audio_files", generate_audio_files)
 
     workflow.add_edge(START, "get_trends")
@@ -259,7 +299,8 @@ def pipeline():
     workflow.add_edge("create_topic", "get_storyboard")
     workflow.add_edge("get_storyboard", "split_into_scenes")
     workflow.add_edge("split_into_scenes", "generate_script")
-    workflow.add_edge("generate_script", "generate_audio_files")
+    workflow.add_edge("generate_script", "generate_sfx")
+    workflow.add_edge("generate_sfx", "generate_audio_files")
     workflow.add_edge("generate_audio_files", END)
     # Run the workflow
     graph = workflow.compile()
@@ -292,6 +333,6 @@ def generate_storyboard(user_prompt: str, generate_topic: bool) -> State:
 
 
 if __name__ == "__main__":
-    generate_storyboard(input("Enter your prompt: "), True)
+    generate_storyboard(input("Enter your prompt: "), False)
     #print(search_and_scrape())
     #print(get_trends({}))
