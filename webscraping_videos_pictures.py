@@ -10,7 +10,7 @@ headers = {
     "Authorization": API_KEY
 }
 
-def download_first_media(query, folder="C:\\Users\\anase\\Desktop\\HackathonMIT2025", filename="media1", is_video=False):
+def download_first_media(query, folder="medias", filename="media1", is_video=False):
     if not os.path.exists(folder):
         os.makedirs(folder)
     
@@ -65,10 +65,9 @@ def download_first_media(query, folder="C:\\Users\\anase\\Desktop\\HackathonMIT2
         print(f"Erreur lors du téléchargement : {media_response.status_code}")
 
 def get_pictures_videos(req, is_video=False):
-    folder_path = "C:\\Users\\anase\\Desktop\\HackathonMIT2025"
     for index, word in enumerate(req[-1]):
         filename = f"scene{req[index][0]}"
-        download_first_media(word, folder=folder_path, filename=filename, is_video=is_video)
+        download_first_media(word, filename=filename, is_video=is_video)
 
 if __name__ == "__main__":
     get_pictures_videos(["sunrise"], is_video=True)
