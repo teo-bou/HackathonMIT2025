@@ -5,3 +5,4 @@ dotenv
 elevenlabs
 ddgs
 trafilatura
+streamlit
