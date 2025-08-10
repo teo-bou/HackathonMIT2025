@@ -32,7 +32,7 @@ if st.button("🚀 Run Agent"):
     status_text = st.empty()
 
     # Output placeholders in tabs
-    tabs = st.tabs(["📈 Trends", "🗞️ Topic", "🎭 Storyboard", "🎬 Scenes", "🎥 Media", "📝 Script", "🎶 SFX Description", "🔊 Audio Files", "📜 Logs"])
+    tabs = st.tabs(["📈 Trends", "🗞️ Topic", "🎭 Storyboard", "🎬 Scenes", "🎥 Media", "📝 Script", "🎶 SFX Description", "🔊 Audio Files", "📜 Prompt"])
     with tabs[0]:
         trends_area = st.empty()
     with tabs[1]:
@@ -50,17 +50,13 @@ if st.button("🚀 Run Agent"):
     with tabs[7]:
         audio_files_area = st.container()
     with tabs[8]:
-        logs_area = st.empty()
+        prompt_area = st.container()
 
     step_count = 8
     current_step = 0
 
-    # Live log
-    logs = []
 
     for output in graph.stream(state):
-        logs.append(str(output))
-        logs_area.code("\n".join(logs))
 
         # Trends
         if "get_trends" in output:
@@ -163,6 +159,26 @@ if st.button("🚀 Run Agent"):
                             st.markdown("---")
             except Exception as e:
                 audio_files_area.error(f"Error creating audio files: {e}")
+
+        if "create_prompt" in output and output["create_prompt"]["prompt"]:
+            try:
+                with prompt_area:
+                    with open("prompt.txt", "r", encoding="utf-8") as f:
+                        prompt_content = f.read()
+
+                    st.title("🎬 Générateur de prompt.txt")
+                    st.subheader("Contenu du fichier :")
+                    st.text_area("prompt.txt", prompt_content, height=400)
+                    # Bouton pour télécharger
+                    st.download_button(
+                        label="📥 Télécharger prompt.txt",
+                        data=prompt_content,
+                        file_name="prompt.txt",
+                        mime="text/plain"
+                    )
+            except Exception as e:
+                prompt_area.error(f"Error creating prompt file: {e}")
+
 
         current_step += 1
         progress.progress(min(current_step / step_count, 1.0))

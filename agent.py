@@ -1,6 +1,6 @@
 # State definition
 from typing import TypedDict, Dict
-from langchain_core.messages import SystemMessage, ToolMessage, AIMessage, HumanMessage
+from langchain_core.messages import AIMessage
 from langgraph.graph import StateGraph, START, END
 import uuid
 import json
@@ -12,6 +12,7 @@ import os
 from audiogen import generate_audio, generate_audio_sfx
 import search_online
 from webscraping_videos_pictures import get_pictures_videos
+from montage import montage
 
 
 class State(TypedDict):
@@ -21,6 +22,7 @@ class State(TypedDict):
     script: Dict
     sfx: Dict
     audio_files_generated: bool
+    prompt: bool
     trends: Dict
 
 load_dotenv()  # take environment variables
@@ -314,8 +316,52 @@ def delete_files():
             except Exception as e:
                 print(f"Erreur lors de la suppression de {file_path} : {e}")
 
-def create_prompt():
+def create_prompt(state: dict) -> dict:
     print("***** create_prompt *****")
+    lines = []
+    #lines.append(f"Titre : \"{state['messages']['user_prompt']}\"")
+
+    # Narration
+    lines.append("Narration:")
+    for script in state['script']:
+        start_time = "00:00:00"
+        for s in state['scenes']:
+            if s['scene_number'] == script["scene_number"]:
+                start_time = s['timestart']
+        lines.append(f"audio\dialog_scene_{script['scene_number']}.mp3 {start_time}")
+
+    # SFX
+    lines.append("SFX:")
+    for sfx in state['sfx']:
+        lines.append(f"audio\sfx_{sfx['timestamp']}.mp3 {sfx['timestamp'].replace('_',':')}")
+
+    # Images
+    lines.append("Images:")
+    for scene in state['scenes']:
+        lines.append(f"medias\scene{scene['scene_number']}.jpg {scene['timestart']} - {scene['timeend']}")
+
+    # Texte
+    lines.append("Texte:")
+    for scene in state['scenes']:
+        if scene["onscreen_text"] != "":
+            lines.append(f'"{scene["onscreen_text"]}" {scene["timestart"]} - {scene["timeend"]}')
+
+    # Écriture dans prompt.txt
+    with open("prompt.txt", "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
+    new_state = {
+        "prompt": True
+    }
+    return new_state
+
+def create_video(state: dict) -> dict:
+    print("***** create_video *****")
+    montage()
+    new_state = {
+        "prompt": True
+    }
+    return new_state
 
 def pipeline():
 
@@ -335,6 +381,7 @@ def pipeline():
     workflow.add_node("generate_sfx", generate_sfx)
     workflow.add_node("generate_audio_files", generate_audio_files)
     workflow.add_node("create_prompt", create_prompt)
+    workflow.add_node("create_video", create_video)
 
     workflow.add_edge(START, "get_trends")
     workflow.add_edge("get_trends", "create_topic")
@@ -345,7 +392,9 @@ def pipeline():
     workflow.add_edge("generate_script", "generate_sfx")
     workflow.add_edge("generate_sfx", "generate_audio_files")
     workflow.add_edge("generate_audio_files", "create_prompt")
-    workflow.add_edge("create_prompt", END)
+    workflow.add_edge("create_prompt", "create_video")
+    workflow.add_edge("create_video", END)
+
     # Run the workflow
     graph = workflow.compile()
 
@@ -367,13 +416,14 @@ def generate_storyboard(user_prompt: str, generate_topic: bool) -> State:
     
     # Run the pipeline
     graph = pipeline()
-    
+    final_output = None
 
     # Iterate over the graph to get the final state
     for output in graph.stream(state):
         print("Current Output:", output)
+        final_output = output
     
-    return output  # Final state with generated storyboard and scenes
+    return final_output  # Final state with generated storyboard and scenes
 
 
 

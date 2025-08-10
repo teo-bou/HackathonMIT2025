@@ -8,7 +8,6 @@ from PIL import Image, ImageDraw, ImageFont
 
 # ---------- CONFIG ----------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FILES_DIR = os.path.join(BASE_DIR, "fichiers")
 PROMPT_FILE = os.path.join(BASE_DIR, "prompt.txt")
 OUTPUT_VIDEO = os.path.join(BASE_DIR, "video_finale.mp4")
 
@@ -158,7 +157,7 @@ def build_audio_mix(tmpdir, music_path, narrs, sfxs, total_duration):
 
     # Narrations
     for narr_file, start_h in narrs:
-        narr_path = os.path.join(FILES_DIR, narr_file)
+        narr_path = narr_file
         if not os.path.exists(narr_path):
             print(f"⚠ Narration missing: {narr_path} (ignored)")
             continue
@@ -172,7 +171,7 @@ def build_audio_mix(tmpdir, music_path, narrs, sfxs, total_duration):
 
     # SFX
     for sfx_file, start_h in sfxs:
-        sfx_path = os.path.join(FILES_DIR, sfx_file)
+        sfx_path = sfx_file
         if not os.path.exists(sfx_path):
             print(f"⚠ SFX missing: {sfx_path} (ignored)")
             continue
@@ -213,17 +212,24 @@ def build_audio_mix(tmpdir, music_path, narrs, sfxs, total_duration):
     run(cmd, cwd=tmpdir)
     return out_path
 
-def main():
+def montage():
     title, music_file, narrs, sfxs, images, texts = parse_prompt(PROMPT_FILE)
 
+    print("Title:", title)
+    print("Music file:", music_file)
+    print("Narrations:", narrs)
+    print("SFXs:", sfxs)
+    print("Images:", images)
+    print("Texts:", texts)
+
     # debug: existence checks
-    print("Checking files exist in", FILES_DIR)
+    print("Checking files exist")
     if music_file:
-        print(" -", music_file, "exists?", os.path.exists(os.path.join(FILES_DIR, music_file)))
+        print(" -", music_file, "exists?", os.path.exists(os.path.join(music_file)))
     for n in narrs:
-        print(" - narr:", n[0], "exists?", os.path.exists(os.path.join(FILES_DIR, n[0])))
+        print(" - narr:", n[0], "exists?", os.path.exists(os.path.join(n[0])))
     for s in sfxs:
-        print(" - sfx:", s[0], "exists?", os.path.exists(os.path.join(FILES_DIR, s[0])))
+        print(" - sfx:", s[0], "exists?", os.path.exists(os.path.join(s[0])))
 
     if not images:
         raise SystemExit("Aucune image trouvée dans prompt.txt")
@@ -245,7 +251,7 @@ def main():
     seg_files = []
     for idx, (imgfile, start_h, end_h) in enumerate(images):
         duration = time_to_seconds(end_h) - time_to_seconds(start_h)
-        in_path = os.path.join(FILES_DIR, imgfile)
+        in_path = imgfile
         if not os.path.exists(in_path):
             raise SystemExit(f"Image manquante: {in_path}")
         out_seg = os.path.join(tmpdir, f"seg_{idx:03d}.mp4")
@@ -272,7 +278,7 @@ def main():
     build_ass_file(texts, ass_path, title_offset=TITLE_DURATION)
 
     # audio: pass absolute music path (or None)
-    music_path = os.path.join(FILES_DIR, music_file) if music_file else None
+    music_path = music_file if music_file else None
     mixed_audio = build_audio_mix(tmpdir, music_path, narrs, sfxs, total_duration)
 
     # final mux + burn subs (run in tmpdir)
@@ -290,6 +296,3 @@ def main():
 
     print("✅ Vidéo finale:", OUTPUT_VIDEO)
     print("Temp files in:", tmpdir)
-
-if __name__ == "__main__":
-    main()

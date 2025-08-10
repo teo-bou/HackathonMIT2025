@@ -1,0 +1,26 @@
+Narration:
+audio\dialog_scene_1.mp3 0:00:00
+audio\dialog_scene_2.mp3 0:00:03
+audio\dialog_scene_3.mp3 0:00:07
+audio\dialog_scene_4.mp3 0:00:12
+audio\dialog_scene_5.mp3 0:00:20
+audio\dialog_scene_6.mp3 0:00:25
+SFX:
+audio\sfx_00_00_00.mp3 00:00:00
+audio\sfx_00_00_03.mp3 00:00:03
+audio\sfx_00_00_07.mp3 00:00:07
+audio\sfx_00_00_12.mp3 00:00:12
+audio\sfx_00_00_20.mp3 00:00:20
+audio\sfx_00_00_25.mp3 00:00:25
+Images:
+medias\scene1.jpg 0:00:00 - 0:00:03
+medias\scene2.jpg 0:00:03 - 0:00:07
+medias\scene3.jpg 0:00:07 - 0:00:12
+medias\scene4.jpg 0:00:12 - 0:00:20
+medias\scene5.jpg 0:00:20 - 0:00:25
+medias\scene6.jpg 0:00:25 - 0:00:30
+Texte:
+"You need to nerd out..." 0:00:00 - 0:00:03
+"Indian spices... the heart of every dish." 0:00:07 - 0:00:12
+"And that's how you nerd out over Indian food." 0:00:20 - 0:00:25
+"Try it out and tag us! #IndianFoodNerd #NerdOutChallenge" 0:00:25 - 0:00:30
