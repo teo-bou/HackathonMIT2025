@@ -20,6 +20,7 @@ class State(TypedDict):
     scenes: Dict
     script: Dict
     sfx: Dict
+    audio_files_generated: bool
     trends: Dict
 
 load_dotenv()  # take environment variables
@@ -187,7 +188,7 @@ def split_into_scenes(state: dict) -> State:
 
 
 
-def generate_script(state: dict) -> None:
+def generate_script(state: dict) -> State:
     print("***** generate_script *****")
 
     # Extract the scenes from the state
@@ -225,7 +226,7 @@ def generate_script(state: dict) -> None:
     return new_state
 
 
-def generate_sfx(state: dict) -> None:
+def generate_sfx(state: dict) -> State:
     print("***** generate_sfx *****")
 
     # Extract the scenes from the state
@@ -263,7 +264,7 @@ def generate_sfx(state: dict) -> None:
     return new_state
 
 
-def generate_audio_files(state: dict) -> None:
+def generate_audio_files(state: dict) -> State:
     print("***** generate_audio *****")
     for scene in state["script"]:
         # Generate audio for each scene
@@ -279,6 +280,10 @@ def generate_audio_files(state: dict) -> None:
         path = f"audio/sfx_{sfx['timestamp']}.mp3"
         generate_audio_sfx(description, duration, path)
     print("SFX audio generation completed for all scenes.")
+    new_state = {
+        "audio_files_generated": True
+    }
+    return new_state
 
 def download_media(state: dict) -> dict:
     print("***** download_media *****")
@@ -316,8 +321,9 @@ def pipeline():
     workflow.add_edge("get_trends", "create_topic")
     workflow.add_edge("create_topic", "get_storyboard")
     workflow.add_edge("get_storyboard", "split_into_scenes")
-    workflow.add_edge("split_into_scences", "download_media")
-    workflow.add_edge("download_media", "generate_script")
+    #workflow.add_edge("split_into_scenes", "download_media")
+    #workflow.add_edge("download_media", "generate_script")
+    workflow.add_edge("split_into_scenes", "generate_script")
     workflow.add_edge("generate_script", "generate_sfx")
     workflow.add_edge("generate_sfx", "generate_audio_files")
     workflow.add_edge("generate_audio_files", END)
@@ -336,7 +342,8 @@ def generate_storyboard(user_prompt: str, generate_topic: bool) -> State:
         "messages": {
             "user_prompt": user_prompt
         },
-        "generate_topic": generate_topic
+        "generate_topic": generate_topic,
+        "audio_files_generated": False
     }
     
     # Run the pipeline
